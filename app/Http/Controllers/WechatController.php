@@ -8,8 +8,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Member;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
 use Ixudra\Curl\Facades\Curl;
 
@@ -83,27 +83,45 @@ class WechatController extends Controller
 
 
     public function callback(Request $request){
-        $isconcern = 0;
         $code = $request->get('code');
-        dd($code);
-        $param = $request->get('param');
-        $accessTokenInfo = $this->getAccessToken($code);
-
-        $openId = $accessTokenInfo['openid'];
-        $userInfo = $this->getUserInfo($openId);
-        if($userInfo['subscribe'] == 1){
-            $isconcern = 1; // 已关注
-        } else {
-            $isconcern = 0; // 未关注
-        }
-        return ['openid'=>$openId];
+        //$param = $request->get('param');
+        $accessTokenInfo = json_decode($this->getAccessToken($code));
+        $openId = $accessTokenInfo->openid;
+        $userInfo = json_decode($this->getUserInfo($openId));
+        return $user = $this->hasMember($openId,$userInfo);
     }
 
-    //用户关注事件
-    public function concern(Request $request) {
+    //用户授权事件
+    public function auth(Request $request) {
         $param = $request->all();// 如果有参数
-        $redirect_uri=urlencode(route('callback',['param'=>$param]));
+        $openid = array_get($param,'openid');
+        if($openid){
+            $userInfo = json_decode($this->getUserInfo($openid));
+            return $this->hasMember($openid,$userInfo);
+        }
+        $redirect_uri=urlencode(route('callback'));
         $this->getCode($redirect_uri, 1 ,'snsapi_base');
     }
 
+    public function hasMember($openid,$userInfo){
+        $member = Member::query()->where('openid',$openid)->first();
+        if(!$member){
+            $data = [
+                'card'=>'',
+                'wxname'=>$userInfo->nickname,
+                'wxsex'=>$userInfo->sex,
+                'openid'=>$openid,
+                'headimg'=>$userInfo->headimgurl,
+                'phone'=>'',
+            ];
+            $member = Member::create($data);
+        }
+        $data = [
+            'state'=>true,
+            'errcode'=>'',
+            'errmsg'=>'',
+            'result'=>['openid'=>$member->openid,'user_id'=>$member->id]
+        ];
+        return response()->json($data);
+    }
 }

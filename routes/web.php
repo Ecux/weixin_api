@@ -15,10 +15,13 @@ $router->get('/', function () {
     return ['message'=>"404 Not Found", 'status_code'=>404];
 });
 
+//todo 事件监听
 $router->get('valid', 'WeixinController@valid');
 
-$router->get('token', 'WechatController@getToken');
+//授权接口
+$router->get('auth',['uses'=>'WechatController@auth','as' => 'auth']);
 
-$router->get('concern',['uses'=>'WechatController@concern','as' => 'concern']);
-
+//微信回调
 $router->get('callback', ['uses'=>'WechatController@callback','as' => 'callback']);
+
+
