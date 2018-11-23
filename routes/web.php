@@ -1,0 +1,24 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Application Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register all of the routes for an application.
+| It is a breeze. Simply tell Lumen the URIs it should respond to
+| and give it the Closure to call when that URI is requested.
+|
+*/
+
+$router->get('/', function () {
+    return ['message'=>"404 Not Found", 'status_code'=>404];
+});
+
+$router->get('valid', 'WeixinController@valid');
+
+$router->get('token', 'WechatController@getToken');
+
+$router->get('concern',['uses'=>'WechatController@concern','as' => 'concern']);
+
+$router->get('callback', ['uses'=>'WechatController@callback','as' => 'callback']);
