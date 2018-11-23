@@ -37,7 +37,7 @@ class WechatController extends Controller
     public function getToken() {
         //1.获取redis 的access_token
         //$data = json_decode(Redis::get(self::UserRedisKey),true);
-        $data = Cache::get(self::UserRedisKey);
+        $data = [];
         //dd($data);
         //if ( empty($data) || $data['expire_time'] < time() ) {
         if ( empty($data) ) {
@@ -48,7 +48,6 @@ class WechatController extends Controller
             if ($access_token) {
                 //$data['expire_time'] = time() + self::ExpireTime;
                 //$data['access_token'] = $access_token;
-                Cache::put(self::UserRedisKey, $access_token, self::ExpireTime);
                 //Redis::set(self::UserRedisKey,json_encode($data));
                 //Redis::expire(self::UserRedisKey, self::ExpireTime);
             }
@@ -86,8 +85,10 @@ class WechatController extends Controller
     public function callback(Request $request){
         $isconcern = 0;
         $code = $request->get('code');
+        dd($code);
         $param = $request->get('param');
         $accessTokenInfo = $this->getAccessToken($code);
+
         $openId = $accessTokenInfo['openid'];
         $userInfo = $this->getUserInfo($openId);
         if($userInfo['subscribe'] == 1){
