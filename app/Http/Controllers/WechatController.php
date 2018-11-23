@@ -102,7 +102,8 @@ class WechatController extends Controller
     //用户关注事件
     public function concern(Request $request) {
         $param = $request->all();// 如果有参数
-        $this->getCode(route('callback'), 1 ,'snsapi_base');
+        $redirect_uri=urlencode(route('callback',['param'=>$param]));
+        $this->getCode($redirect_uri, 1 ,'snsapi_base');
     }
 
 }
