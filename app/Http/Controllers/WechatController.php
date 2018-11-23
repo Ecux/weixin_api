@@ -35,22 +35,10 @@ class WechatController extends Controller
      * @return mixed
      */
     public function getToken() {
-        //1.获取redis 的access_token
-        $data = json_decode(Redis::get(self::UserRedisKey),true);
-        if ( empty($data) || $data['expire_time'] < time() ) {
-            $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".$this->appId."&secret=".$this->appSecret;
-            $jsonRet = Curl::to($url)->get();
-            $objRet = json_decode($jsonRet);
-            $access_token = $objRet->access_token;
-            if ($access_token) {
-                $data['expire_time'] = time() + self::ExpireTime;
-                $data['access_token'] = $access_token;
-                Redis::set(self::UserRedisKey,json_encode($data));
-                Redis::expire(self::UserRedisKey, self::ExpireTime);
-            }
-        } else {
-            $access_token = $data;
-        }
+        $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=".$this->appId."&secret=".$this->appSecret;
+        $jsonRet = Curl::to($url)->get();
+        $objRet = json_decode($jsonRet);
+        $access_token = $objRet->access_token;
         return $access_token;
     }
 
@@ -81,19 +69,18 @@ class WechatController extends Controller
 
     public function callback(Request $request){
         $code = $request->get('code');
-      
         $url = $request->get('url');
         $accessTokenInfo = json_decode($this->getAccessToken($code));
         $openId = $accessTokenInfo->openid;
         $userInfo = json_decode($this->getUserInfo($openId));
-        $user = $this->hasMember($openId,$userInfo,$url);
+        $this->hasMember($openId,$userInfo,$url);
     }
 
     //用户授权事件
     public function auth(Request $request) {
         $param = $request->all();// 如果有参数
-        
-        $redirect_uri=urlencode(route('callback',['url'=>$param['url']]));
+        $url = array_get($param,'url','');
+        $redirect_uri=urlencode(route('callback',['url'=>$url]));
         $this->getCode($redirect_uri, 1 ,'snsapi_userinfo');
     }
 
@@ -111,11 +98,9 @@ class WechatController extends Controller
             $member = Member::create($data);
         }
 
-        if(!$url){
-        	$url = "http://www.baidu.com";
-        }
+        $url = "http://www.baidu.com";
 
-        $data = http_build_query(['openid'=>$member->openid,'user_id'=>$member->id]);
+        $param = http_build_query(['openid'=>$member->openid,'user_id'=>$member->id]);
 
         header('Location: '.$url.$param, true, 301);
     }
